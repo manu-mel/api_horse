@@ -1,0 +1,59 @@
+unit Services.Acesso;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, Providers.Connection, FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Error,
+  FireDAC.UI.Intf, FireDAC.Phys.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys, FireDAC.VCLUI.Wait,
+  Data.DB, FireDAC.Comp.Client, System.JSON, FireDAC.Comp.DataSet, DataSetConverter4D, DataSetConverter4D.Impl,FireDAC.Phys.PGDef,
+  FireDAC.Phys.PG, Classes.AuthClaims;
+
+type
+  TServicesAcesso = class(TProvidersConnection)
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+    function GetID(sID: String): String;
+  end;
+
+var
+  ServicesAcesso: TServicesAcesso;
+
+implementation
+
+{%CLASSGROUP 'Vcl.Controls.TControl'}
+
+{$R *.dfm}
+
+function TServicesAcesso.GetID(sID: String): String;
+var
+  oQry: TFDQuery;
+  oArray: TJSONArray;
+begin
+  oQry := TFDQuery.Create(nil);
+
+  try
+    oQry.Connection := Conexao;
+
+    oQry.Close;
+    oQry.SQL.Add('SELECT first_name, last_name');
+    oQry.SQL.Add('FROM staff');
+    oQry.SQL.Add('WHERE staff_id = ' + QuotedStr(sID));
+    oQry.Open;
+
+    if oQry.IsEmpty then
+      raise Exception.Create('Nenhum registro encontrado.');
+
+    oArray := TConverter.New.DataSet(oQry).AsJSONArray;
+
+    Result := oArray.ToJSON;
+
+    FreeAndNil(oArray);
+  finally
+    oQry.Close;
+    FreeAndNil(oQry);
+  end;
+end;
+
+end.

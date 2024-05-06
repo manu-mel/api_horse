@@ -1,0 +1,173 @@
+unit Services.Acesso;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, Providers.Connection, FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Error,
+  FireDAC.UI.Intf, FireDAC.Phys.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys, FireDAC.VCLUI.Wait,
+  Data.DB, FireDAC.Comp.Client, System.JSON, FireDAC.Comp.DataSet, DataSetConverter4D, DataSetConverter4D.Impl,FireDAC.Phys.PGDef,
+  FireDAC.Phys.PG, Classes.AuthClaims, JOSE.Core.JWT, JOSE.Core.Builder;
+
+type
+  TServicesAcesso = class(TProvidersConnection)
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+    function GetID(sID: String): String;
+    function Post(sBody: String): String;
+  end;
+
+var
+  ServicesAcesso: TServicesAcesso;
+
+implementation
+
+{%CLASSGROUP 'Vcl.Controls.TControl'}
+
+{$R *.dfm}
+
+function TServicesAcesso.GetID(sID: String): String;
+var
+  oQry: TFDQuery;
+  oArray: TJSONArray;
+begin
+  oQry := TFDQuery.Create(nil);
+
+  try
+    oQry.Connection := Conexao;
+
+    oQry.Close;
+    oQry.SQL.Add('SELECT first_name, last_name');
+    oQry.SQL.Add('FROM staff');
+    oQry.SQL.Add('WHERE staff_id = ' + QuotedStr(sID));
+    oQry.Open;
+
+    if oQry.IsEmpty then
+      raise Exception.Create('Nenhum registro encontrado.');
+
+    oArray := TConverter.New.DataSet(oQry).AsJSONArray;
+
+    Result := oArray.ToJSON;
+
+    FreeAndNil(oArray);
+  finally
+    oQry.Close;
+    FreeAndNil(oQry);
+  end;
+end;
+
+function TServicesAcesso.Post(sBody: String): String;
+var
+  oQry: TFDQuery;
+  oArray: TJSONArray;
+  oObj: TJSONObject;
+  sEmail, sSenha, sCNPJ, sToken: string;
+  bSenhaValida: Boolean;
+  oJWT: TJWT;
+  oClaims: TAuthClaims;
+begin
+  oQry := TFDQuery.Create(nil);
+
+  try
+    oQry.Connection := Conexao;
+
+    oArray := TJSONObject.ParseJSONValue(TEncoding.UTF8.GetBytes(sBody),0) as TJSONArray;
+    oObj := oArray.Items[0] as TJSONObject;
+
+    if not oObj.TryGetValue('email',sEmail) then
+      raise Exception.Create('e-mail inválido.');
+
+    if not oObj.TryGetValue('password',sSenha) then
+      raise Exception.Create('senha inválida.');
+
+    oQry.Close;
+    oQry.SQL.Clear;
+    oQry.SQL.Add('SELECT ACESSO_USUARIOS.CODIGO, ACESSO_USUARIOS.PERFIL, ACESSO_USUARIOS.NOME, ACESSO_USUARIOS.SENHA, ACESSO_USUARIOS.TIPO,');
+    oQry.SQL.Add('ACESSO_USUARIOS.CODFUN, PESSOAL.SETOR');
+    oQry.SQL.Add('FROM ACESSO_USUARIOS ACESSO_USUARIOS');
+    oQry.SQL.Add('LEFT JOIN PESSOAL_001 PESSOAL ON (ACESSO_USUARIOS.CODFUN = PESSOAL.CODIGO)');
+    oQry.SQL.Add('WHERE TRIM(UPPER(ACESSO_USUARIOS.EMAIL)) = '+QuotedStr(UpperCase(sEmail)));
+    oQry.SQL.Text := PrepareSQL(oQry.SQL.Text);
+    oQry.Open;
+
+    if oQry.IsEmpty and (Pos('@',sEmail) > 0) then
+      raise Exception.Create('email inválido.');
+
+    /// Se não encontrar por e-mail, tenta logar por CNPJ
+    if oQry.IsEmpty and ((Length(sEmail) = 18) or (Length(sEmail) = 14)) then
+    begin
+      sCNPJ := FormatarCpfCnpj(sEmail);
+
+      oQry.Close;
+      oQry.SQL.Clear;
+      oQry.SQL.Add('SELECT ACESSO_USUARIOS.CODIGO, ACESSO_USUARIOS.PERFIL, ACESSO_USUARIOS.NOME, ACESSO_USUARIOS.SENHA, ACESSO_USUARIOS.TIPO,');
+      oQry.SQL.Add('ACESSO_USUARIOS.CODFUN, PESSOAL.SETOR');
+      oQry.SQL.Add('FROM ACESSO_USUARIOS ACESSO_USUARIOS');
+      oQry.SQL.Add('LEFT JOIN PESSOAL_001 PESSOAL ON (ACESSO_USUARIOS.CODFUN = PESSOAL.CODIGO)');
+      oQry.SQL.Add('WHERE ACESSO_USUARIOS.CNPJ = '+QuotedStr(sCNPJ));
+      oQry.SQL.Text := PrepareSQL(oQry.SQL.Text);
+      oQry.Open;
+
+      if oQry.IsEmpty then
+        raise Exception.Create('cnpj inválido.');
+    end;
+
+    if oQry.IsEmpty then
+      raise Exception.Create('login inválido.');
+
+    // laço necessário porque se for por CNPJ pode ter mais de um registro
+    oQry.First;
+
+    while not oQry.Eof do
+    begin
+      if oQry.FieldByName('SENHA').AsString = GenerateMD5(sSenha) then
+      begin
+        bSenhaValida := True;
+        Break;
+      end;
+
+      oQry.Next;
+    end;
+    // -------------------------------------------------------------------
+
+    if not bSenhaValida then
+      raise Exception.Create('senha inválida.');
+
+    oJWT := TJWT.Create(TAuthClaims);
+
+    try
+      oClaims := TAuthClaims(oJWT.Claims);
+
+      oClaims.Expiration := IncHour(Now, 5);
+
+      oClaims.Codigo := oQry.FieldByName('CODIGO').AsString;
+      oClaims.Nome   := oQry.FieldByName('NOME').AsString;
+      oClaims.Setor  := oQry.FieldByName('SETOR').AsString;
+      oClaims.Perfil := oQry.FieldByName('PERFIL').AsInteger;
+      oClaims.Tipo   := StrToIntDef(oQry.FieldByName('TIPO').AsString,0);
+      oClaims.CodFun := oQry.FieldByName('CODFUN').AsString;
+
+      sToken := TJOSE.SHA256CompactToken('excia-sistemas-intranet', oJWT);
+
+      oObj := TJSONObject.Create;
+
+      oObj.AddPair('access_token', TJSONString.Create(sToken));
+      oObj.AddPair('expires_in',TJSONNumber.Create(18000));    // 5 horas em segundos
+      oObj.AddPair('token_type',TJSONString.Create('Bearer'));
+
+      oArray := TJSONArray.Create;
+      oArray.Add(oObj);
+
+      Result := oArray.ToJSON;
+    finally
+      FreeAndNil(oJWT);
+    end;
+  finally
+    FreeAndNil(oArray);
+    oQry.Close;
+    FreeAndNil(oQry);
+  end;
+end;
+
+end.

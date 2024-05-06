@@ -1,0 +1,40 @@
+unit Controllers.Acesso;
+
+interface
+
+procedure Registry;
+
+implementation
+
+uses Horse, Horse.Commons, System.JSON, SysUtils, Services.Acesso;
+
+procedure DoGetAcesso(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+var
+  Acesso: TServicesAcesso;
+  sResponse, sCodigo: String;
+begin
+  Acesso := TServicesAcesso.Create;
+  try
+    try
+      sCodigo := Req.Query['codigo'];
+
+      sResponse := Acesso.Get(sCodigo);
+
+      Res.Send(TJSONObject.ParseJSONValue(TEncoding.UTF8.GetBytes(sResponse),0) as TJSONArray).Status(THTTPStatus.OK);
+    except
+      on E: exception do
+      begin
+        Res.Send(E.Message).Status(THTTPStatus.BadRequest);
+      end;
+    end;
+  finally
+    FreeAndNil(Acesso);
+  end;
+end;
+
+procedure Registry;
+begin
+  THorse.Get('/Acesso', DoGetAcesso);
+end;
+
+end.

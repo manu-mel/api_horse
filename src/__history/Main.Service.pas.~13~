@@ -1,0 +1,69 @@
+unit Main.Service;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.SvcMgr, Vcl.Dialogs, FireDAC.DApt;
+
+type
+  TMainService = class(TService)
+    procedure ServiceStop(Sender: TService; var Stopped: Boolean);
+    procedure ServiceStart(Sender: TService; var Started: Boolean);
+    procedure ServiceCreate(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    function GetServiceController: TServiceController; override;
+    { Public declarations }
+  end;
+
+var
+  MainService: TMainService;
+
+implementation
+
+uses
+  Horse,
+  Horse.Jhonson,
+  Horse.JWT,
+  Controllers.Acesso;
+
+{$R *.dfm}
+
+procedure ServiceController(CtrlCode: DWord); stdcall;
+begin
+  MainService.Controller(CtrlCode);
+end;
+
+function TMainService.GetServiceController: TServiceController;
+begin
+  Result := ServiceController;
+end;
+
+procedure TMainService.ServiceCreate(Sender: TObject);
+begin
+  THorse
+    .Use(Jhonson)
+    .Use(
+      JWT('excia-sistemas-intranet',
+          TEXCIAJWTConfig
+            .New
+            .SessionClass(TAuthClaims)
+            .SkipRoutes(['versao','autenticar','acessousuarios/verificar','chamado/avaliacao'])));
+
+  Controllers.Acesso.Registry;
+end;
+
+procedure TMainService.ServiceStart(Sender: TService; var Started: Boolean);
+begin
+	THorse.Listen(9000);
+	Started := True;
+end;
+
+procedure TMainService.ServiceStop(Sender: TService; var Stopped: Boolean);
+begin
+  THorse.StopListen;
+	Stopped := True;
+end;
+
+end.

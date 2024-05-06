@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2024/05/06 11:05:34.000.300,=C:\Users\user\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2024/05/06 11:06:03.000.493,C:\Users\user\Documents\Projects\DVD_Rental\src\Main.Service.dfm=C:\Users\user\Documents\Embarcadero\Studio\Projects\Unit1.dfm</Transaction>
+    <Transaction>2024/05/06 11:06:03.000.493,C:\Users\user\Documents\Projects\DVD_Rental\src\Main.Service.pas=C:\Users\user\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2024/05/06 11:06:13.000.915,C:\Users\user\Documents\Projects\DVD_Rental\DVDRental.dproj=C:\Users\user\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>2024/05/06 11:15:30.000.494,=C:\Users\user\Documents\Projects\DVD_Rental\Unit1.pas</Transaction>
+    <Transaction>2024/05/06 11:17:24.000.966,C:\Users\user\Documents\Projects\DVD_Rental\src\Providers\Providers.Connection.pas=C:\Users\user\Documents\Projects\DVD_Rental\Unit1.pas</Transaction>
+    <Transaction>2024/05/06 11:17:24.000.966,C:\Users\user\Documents\Projects\DVD_Rental\src\Providers\Providers.Connection.dfm=C:\Users\user\Documents\Projects\DVD_Rental\Unit1.dfm</Transaction>
+    <Transaction>2024/05/06 11:18:51.000.942,=C:\Users\user\Documents\Projects\DVD_Rental\Unit1.pas</Transaction>
+    <Transaction>2024/05/06 11:19:18.000.107,C:\Users\user\Documents\Projects\DVD_Rental\src\Services\Services.Acesso.dfm=C:\Users\user\Documents\Projects\DVD_Rental\Unit1.dfm</Transaction>
+    <Transaction>2024/05/06 11:19:18.000.107,C:\Users\user\Documents\Projects\DVD_Rental\src\Services\Services.Acesso.pas=C:\Users\user\Documents\Projects\DVD_Rental\Unit1.pas</Transaction>
+    <Transaction>2024/05/06 11:19:28.000.831,=C:\Users\user\Documents\Projects\DVD_Rental\Unit1.pas</Transaction>
+    <Transaction>2024/05/06 11:19:47.000.550,C:\Users\user\Documents\Projects\DVD_Rental\src\Controllers\Controllers.Acesso.pas=C:\Users\user\Documents\Projects\DVD_Rental\Unit1.pas</Transaction>
+    <Transaction>2024/05/06 15:01:41.089,=C:\Users\user\Documents\Projects\DVD_Rental\Unit1.pas</Transaction>
+    <Transaction>2024/05/06 15:01:55.565,C:\Users\user\Documents\Projects\DVD_Rental\src\Classes\Classes.AuthClaims.pas=C:\Users\user\Documents\Projects\DVD_Rental\Unit1.pas</Transaction>
+  </Transactions>
+</BorlandProject>

@@ -1,0 +1,6 @@
+object MainService: TMainService
+  OldCreateOrder = False
+  DisplayName = 'MainService'
+  Height = 150
+  Width = 215
+end
